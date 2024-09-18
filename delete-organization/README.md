@@ -1,0 +1,1 @@
+This is a mini-repo written to simplify the organization deletion process. It currently only performs a backwards pass to fetch all reverse triples of a specific organization URI, but if time allows, some sort of configuration will be added to orcestrate the deletion process.
