@@ -122,6 +122,42 @@ WHERE {{
     query
 }
 
+fn create_forward_parametrized_select_query_with_type(uri: &str, uri_type: &str) -> String {
+  let query = format!(
+      r#"
+    SELECT DISTINCT ?o WHERE {{
+      VALUES ?values {{
+        {}
+      }}
+
+      ?values a {}
+        ?p ?o .
+    }}
+  "#,
+      uri, uri_type
+  );
+
+  query
+}
+
+fn create_backward_parametrized_select_query_with_type(uri: &str, uri_type: &str) -> String {
+  let query = format!(
+      r#"
+    SELECT DISTINCT ?o WHERE {{
+      VALUES ?values {{
+        {}
+      }}
+
+      ?s a {}
+        ?p ?values .
+    }}
+  "#,
+      uri, uri_type
+  );
+
+  query
+}
+
 fn create_forward_parametrized_query(uri: &str) -> String {
     let query = format!(
         r#"
