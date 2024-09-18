@@ -1,2 +1,11 @@
 /target/
 /out_folder/
+
+# IDE-specific ignores
+.vscode/
+.idea/
+*.swp
+
+# OS ignores
+.DS_Store
+desktop.ini
