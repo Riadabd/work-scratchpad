@@ -1,0 +1,1 @@
+This is a scratchpad that contains programs written for a specific (or sometimes slight more general) purpose. The idea here is to congregate all these utilities in one place and iterate on them whenever they are needed and whenever there is enough time to do so.
