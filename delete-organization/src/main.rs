@@ -102,6 +102,26 @@ WHERE {
     s
 }
 
+fn create_simple_forward_parametrized_delete_query(uri: &str) -> String {
+    let query = format!(
+        r#"DELETE {{
+  GRAPH ?g {{
+    ?s ?p ?o .
+  }}
+}}
+WHERE {{
+  BIND({} AS ?s)
+
+  GRAPH ?g {{
+    ?s ?p ?o .
+  }}
+}}"#,
+        uri
+    );
+
+    query
+}
+
 fn create_forward_parametrized_query(uri: &str) -> String {
     let query = format!(
         r#"
@@ -295,7 +315,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     f.write_all(out.as_bytes())?;
 
     f.write_all("# Delete forward triples\n\n".as_bytes())?;
-    f.write_all(out_forward.as_bytes())?;
+    // f.write_all(out_forward.as_bytes())?;
+    f.write_all(create_simple_forward_parametrized_delete_query(URI).as_bytes())?;
 
     Ok(())
 }
