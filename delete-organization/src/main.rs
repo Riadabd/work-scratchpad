@@ -482,7 +482,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut f = OpenOptions::new()
         .create(true)
         .append(true)
-        .open(format!("{}/{}", "out_folder", "output.txt"))?;
+        .open(format!("{}/{}", "generated_sparql_queries", "output.txt"))?;
     // f.write_all("<uri1> a ?type".as_bytes())?;
     f.write_all("# Delete reverse triples\n\n".as_bytes())?;
     f.write_all(out.as_bytes())?;
