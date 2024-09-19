@@ -183,38 +183,6 @@ fn create_forward_parametrized_query(uri: &str) -> String {
 }
 
 fn create_reverse_parametrized_query(uri: &str) -> String {
-    // let query = format!(
-    //     r#"
-    //     SELECT DISTINCT ?s WHERE {{
-    //       VALUES ?values {{
-    //         {}
-    //       }}
-
-    //       ?s ?p ?values .
-    //     }}
-    // "#,
-    //     uri.iter()
-    //         .map(|&s| format!("<{}>", s))
-    //         .collect::<Vec<_>>()
-    //         .join("\n")
-    // );
-
-    // let query = format!(
-    //     r#"
-    //       SELECT DISTINCT ?s WHERE {{
-    //         VALUES ?values {{
-    //           {}
-    //         }}
-
-    //         ?s ?p ?values .
-    //       }}
-    //     "#,
-    //     uri.iter()
-    //         .filter_map(|v| { v["s"]["value"].as_str().map(String::from) })
-    //         .collect::<Vec<_>>()
-    //         .join("\n")
-    // );
-
     let query = format!(
         r#"
         SELECT DISTINCT ?s WHERE {{
@@ -324,15 +292,6 @@ async fn build_deletion_path(
 
     let mut s = String::new();
 
-    // let mut current_uri: Vec<&str> = vec![uri];
-    // let mut current_type = uri_type;
-
-    // let mut backward_stack: Vec<Vec<&str>> = Vec::new();
-    // backward_stack.push(vec![uri_type]);
-
-    // let mut foward_stack: Vec<Vec<&str>> = Vec::new();
-    // foward_stack.push(vec![uri_type]);
-
     map.insert(uri_type, vec![uri.to_string()]);
 
     if let Some(obj) = my_data.as_object() {
@@ -441,27 +400,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     const URI: &str =
         "<http://data.lblod.info/id/bestuurseenheden/ba8ffc97-5490-4ecc-b24e-aab26b23c026>";
     const URI_TYPE: &str = "<http://data.vlaanderen.be/ns/besluit#Bestuurseenheid>";
-
-    // const GET_RESOURCES_QUERY: &str = r#"
-    //   SELECT DISTINCT ?s WHERE {
-    //     ?s ?p <http://data.lblod.info/id/bestuurseenheden/9af828073bb4c53989fe0693526a31aec47d85a4bc6ac9d485ca6878eb3b3f1c> .
-    //   }
-    // "#;
-
-    // let GET_RESOURCES = format!(r#"
-    //   SELECT DISTINCT ?s WHERE {{
-    //     ?s ?p {} .
-    //   }}
-    // "#, "<http://data.lblod.info/id/bestuurseenheden/9af828073bb4c53989fe0693526a31aec47d85a4bc6ac9d485ca6878eb3b3f1c>");
-
-    // let client = Client::new();
-
-    // let get_resources_query = create_parametrized_query(&vec!["http://data.lblod.info/id/bestuurseenheden/9af828073bb4c53989fe0693526a31aec47d85a4bc6ac9d485ca6878eb3b3f1c"]);
-
-    // let r = fetch_sparql_results(&client, SPARQL_ENDPOINT, get_resources_query.as_str()).await?;
-    // let results = parse_json_uris(&r);
-    // println!("{:?}", results);
-    // let out = build_delete_snippet(&results);
 
     // let out = build_reverse_path(URI).await?;
     // println!("{}", out);
