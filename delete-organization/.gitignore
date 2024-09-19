@@ -1,5 +1,6 @@
 /target/
 /out_folder/
+config/*.json
 
 # IDE-specific ignores
 .vscode/
