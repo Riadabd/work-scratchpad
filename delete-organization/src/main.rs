@@ -432,12 +432,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .append(true)
         .open(format!("{}/{}", "generated_sparql_queries", "output.txt"))?;
     // f.write_all("<uri1> a ?type".as_bytes())?;
-    f.write_all("# Delete reverse triples\n\n".as_bytes())?;
+    // f.write_all("# Delete reverse triples\n\n".as_bytes())?;
     f.write_all(out.as_bytes())?;
 
-    f.write_all("# Delete forward triples\n\n".as_bytes())?;
+    // f.write_all("# Delete forward triples\n\n".as_bytes())?;
     // f.write_all(out_forward.as_bytes())?;
     f.write_all(create_simple_forward_parametrized_delete_query(URI).as_bytes())?;
+    f.write_all(b"\n")?;
 
     Ok(())
 }
