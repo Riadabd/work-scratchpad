@@ -2,12 +2,20 @@ use std::fs::{File, OpenOptions};
 use std::io::BufReader;
 use std::{collections::HashMap, io::Write};
 
+use indexmap::IndexMap;
 use reqwest::{
     header::{HeaderMap, HeaderValue, ACCEPT, CONTENT_TYPE},
     Client,
 };
 
+use serde::Deserialize;
 use serde_json::Value;
+
+#[derive(Deserialize)]
+struct jsonConfig {
+    #[serde(flatten)]
+    data: IndexMap<String, serde_json::Value>,
+}
 
 async fn fetch_sparql_results(
     client: &Client,
@@ -200,7 +208,7 @@ fn create_reverse_parametrized_query(uri: &str) -> String {
 }
 
 async fn build_reverse_path(uri: &str) -> Result<String, Box<dyn std::error::Error>> {
-    const SPARQL_ENDPOINT: &str = "http://localhost:8890/sparql";
+    const SPARQL_ENDPOINT: &str = "http://localhost:8870/sparql";
     let client = Client::new();
 
     let mut s = String::new();
@@ -281,21 +289,23 @@ async fn build_deletion_path(
     uri: &str,
     uri_type: &str,
 ) -> Result<String, Box<dyn std::error::Error>> {
-    let file = File::open("config/config.json")?;
+    let file = File::open("config/config-op.json")?;
     let reader = BufReader::new(file);
+    // let my_data: Value = serde_json::from_reader(reader)?;
+    let parsed_json_config: jsonConfig = serde_json::from_reader(reader)?;
 
-    let my_data: Value = serde_json::from_reader(reader)?;
     let mut map: HashMap<&str, Vec<String>> = HashMap::new();
 
-    const SPARQL_ENDPOINT: &str = "http://localhost:8890/sparql";
+    const SPARQL_ENDPOINT: &str = "http://localhost:8870/sparql";
     let client = Client::new();
 
     let mut s = String::new();
 
     map.insert(uri_type, vec![uri.to_string()]);
 
-    if let Some(obj) = my_data.as_object() {
-        for (key, value) in obj {
+    // if let Some(obj) = parsed_json_config.as_object() {
+        for (key, value) in &parsed_json_config.data {
+            println!("{}", key);
             if let Some(inner_obj) = value.as_object() {
                 if let Some(reverse) = inner_obj.get("reverse") {
                     if let Some(reverse_array) = reverse.as_array() {
@@ -310,13 +320,13 @@ async fn build_deletion_path(
                                     .map(|v| format!("{}", v))
                                     .collect::<Vec<_>>()
                                     .join("\n");
-                                println!("{}", values_list);
+                                // println!("{}", values_list);
                                 let get_reverse_triples =
                                     create_backward_parametrized_select_query_with_type(
                                         values_list.as_str(),
                                         item.as_str().unwrap(),
                                     );
-                                println!("{}", get_reverse_triples);
+                                // println!("{}", get_reverse_triples);
                                 let r = fetch_sparql_results(
                                     &client,
                                     SPARQL_ENDPOINT,
@@ -355,13 +365,13 @@ async fn build_deletion_path(
                                     .map(|v| format!("{}", v))
                                     .collect::<Vec<_>>()
                                     .join("\n");
-                                println!("{}", values_list);
+                                // println!("{}", values_list);
                                 let get_forward_triples =
                                     create_forward_parametrized_select_query_with_type(
                                         values_list.as_str(),
                                         item.as_str().unwrap(),
                                     );
-                                println!("{}", get_forward_triples);
+                                // println!("{}", get_forward_triples);
                                 let r = fetch_sparql_results(
                                     &client,
                                     SPARQL_ENDPOINT,
@@ -370,7 +380,7 @@ async fn build_deletion_path(
                                 .await?;
 
                                 let results = parse_json_uris(&r, "o");
-                                println!("{:?}", results);
+                                // println!("{:?}", results);
                                 let result_value_list = results
                                     .iter()
                                     .filter_map(|v| {
@@ -389,7 +399,7 @@ async fn build_deletion_path(
                 }
             }
         }
-    }
+    // }
 
     Ok(s)
 }
@@ -398,7 +408,7 @@ async fn build_deletion_path(
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // const SPARQL_ENDPOINT: &str = "http://localhost:8870/sparql";
     const URI: &str =
-        "<http://data.lblod.info/id/bestuurseenheden/ba8ffc97-5490-4ecc-b24e-aab26b23c026>";
+        "<http://data.lblod.info/id/bestuurseenheden/9af828073bb4c53989fe0693526a31aec47d85a4bc6ac9d485ca6878eb3b3f1c>";
     const URI_TYPE: &str = "<http://data.vlaanderen.be/ns/besluit#Bestuurseenheid>";
 
     // let out = build_reverse_path(URI).await?;
@@ -406,7 +416,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let out = build_deletion_path(URI, URI_TYPE).await?;
     // println!("{}", out);
 
-    let out_forward = build_forward_path(URI).await?;
+    //let out_forward = build_forward_path(URI).await?;
     // println!("{}", out_forward);
 
     // let mut file = OpenOptions::new()

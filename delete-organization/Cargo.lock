@@ -103,6 +103,7 @@ checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
 name = "delete-organization"
 version = "0.1.0"
 dependencies = [
+ "indexmap",
  "reqwest",
  "serde",
  "serde_json",
@@ -335,6 +336,7 @@ checksum = "68b900aa2f7301e21c36462b170ee99994de34dff39a4a6a528e80e7376d07e5"
 dependencies = [
  "equivalent",
  "hashbrown",
+ "serde",
 ]
 
 [[package]]
