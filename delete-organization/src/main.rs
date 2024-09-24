@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::fs::{File, OpenOptions};
 use std::io::BufReader;
 use std::{collections::HashMap, io::Write};
@@ -115,6 +116,28 @@ WHERE {
     );
 
     s
+}
+
+fn build_parametrized_delete_query(uri: &str) -> String {
+    let query = format!(
+        r#"DELETE {{
+  GRAPH ?g {{
+    ?s ?p ?o .
+  }}
+}}
+WHERE {{
+  VALUES ?s {{
+{}
+  }}
+
+  GRAPH ?g {{
+    ?s ?p ?o .
+  }}
+}}"#,
+        uri
+    );
+
+    query
 }
 
 fn create_simple_forward_parametrized_delete_query(uri: &str) -> String {
@@ -304,102 +327,156 @@ async fn build_deletion_path(
     map.insert(uri_type, vec![uri.to_string()]);
 
     // if let Some(obj) = parsed_json_config.as_object() {
-        for (key, value) in &parsed_json_config.data {
-            println!("{}", key);
-            if let Some(inner_obj) = value.as_object() {
-                if let Some(reverse) = inner_obj.get("reverse") {
-                    if let Some(reverse_array) = reverse.as_array() {
-                        for item in reverse_array {
-                            // Fetch URIs belonging to the current key (type).
-                            // These URIs were placed in the hashmap in a previous step
-                            // where their type was in the reverse/forward array of a previous type.
-                            // We fetch them to get their reverse triples.
-                            if let Some(current_uris) = map.get(key.as_str()) {
-                                let values_list = current_uris
-                                    .iter()
-                                    .map(|v| format!("{}", v))
-                                    .collect::<Vec<_>>()
-                                    .join("\n");
-                                // println!("{}", values_list);
-                                let get_reverse_triples =
-                                    create_backward_parametrized_select_query_with_type(
-                                        values_list.as_str(),
-                                        item.as_str().unwrap(),
-                                    );
-                                // println!("{}", get_reverse_triples);
-                                let r = fetch_sparql_results(
-                                    &client,
-                                    SPARQL_ENDPOINT,
-                                    get_reverse_triples.as_str(),
-                                )
-                                .await?;
+    for (key, value) in &parsed_json_config.data {
+        println!("{}", key);
+        if let Some(inner_obj) = value.as_object() {
+            if let Some(reverse) = inner_obj.get("reverse") {
+                if let Some(reverse_array) = reverse.as_array() {
+                    for item in reverse_array {
+                        // Fetch URIs belonging to the current key (type).
+                        // These URIs were placed in the hashmap in a previous step
+                        // where their type was in the reverse/forward array of a previous type.
+                        // We fetch them to get their reverse triples.
+                        if let Some(current_uris) = map.get(key.as_str()) {
+                            let values_list = current_uris
+                                .iter()
+                                .map(|v| format!("{}", v))
+                                .collect::<Vec<_>>()
+                                .join("\n");
+                            // println!("{}", values_list);
+                            let get_reverse_triples =
+                                create_backward_parametrized_select_query_with_type(
+                                    values_list.as_str(),
+                                    item.as_str().unwrap(),
+                                );
+                            // println!("{}", get_reverse_triples);
+                            let r = fetch_sparql_results(
+                                &client,
+                                SPARQL_ENDPOINT,
+                                get_reverse_triples.as_str(),
+                            )
+                            .await?;
 
-                                let results = parse_json_uris(&r, "s");
-                                let result_value_list = results
-                                    .iter()
-                                    .filter_map(|v| {
-                                        v["s"]["value"].as_str().map(|s| format!("<{}>", s))
-                                    })
-                                    .collect::<Vec<_>>();
-                                if !result_value_list.is_empty() {
-                                    map.insert(item.as_str().unwrap(), result_value_list);
+                            let results = parse_json_uris(&r, "s");
+                            let result_value_list = results
+                                .iter()
+                                .filter_map(|v| {
+                                    v["s"]["value"].as_str().map(|s| format!("<{}>", s))
+                                })
+                                .collect::<Vec<_>>();
+                            if !result_value_list.is_empty() {
+                                // if item != key {
+                                //     map.entry(key)
+                                //         .or_insert_with(Vec::new)
+                                //         .extend(result_value_list);
+                                //     // let ve = map.get(item.as_str().unwrap()).unwrap();
+                                //     // ve.extend(result_value_list);
+                                // } else {
+                                //     map.insert(item.as_str().unwrap(), result_value_list);
+                                // }
 
-                                    s.push_str(build_delete_snippet(&results, "s").as_str());
-                                    s.push_str("\n;\n\n");
-                                }
+                                // We first append all URIs of a specific type to that type's entry
+                                // in the hash map.
+                                //
+                                // However, there are times where we can get duplicate results.
+                                // For example:
+                                // 1. We bundle identifiers from config-op.json.
+                                // 2. We reach the identifier key in the config and start checking
+                                // its foward and backward relationships.
+                                // 3. Identifiers can point to identifiers, which means that one or more
+                                // identifier(s) will be duplicated if they are pointed to by other identifiers.
+                                map.entry(item.as_str().unwrap())
+                                    .or_insert_with(Vec::new)
+                                    .extend(result_value_list);
+
+                                // s.push_str(build_delete_snippet(&results, "s").as_str());
+                                // s.push_str("\n;\n\n");
                             }
                         }
                     }
                 }
+            }
 
-                if let Some(forward) = inner_obj.get("forward") {
-                    if let Some(forward_array) = forward.as_array() {
-                        for item in forward_array {
-                            // Fetch URIs belonging to the current key (type).
-                            // These URIs were placed in the hashmap in a previous step
-                            // where their type was in the reverse/forward array of a previous type.
-                            // We fetch them to get their forward triples.
-                            if let Some(current_uris) = map.get(key.as_str()) {
-                                let values_list = current_uris
-                                    .iter()
-                                    .map(|v| format!("{}", v))
-                                    .collect::<Vec<_>>()
-                                    .join("\n");
-                                // println!("{}", values_list);
-                                let get_forward_triples =
-                                    create_forward_parametrized_select_query_with_type(
-                                        values_list.as_str(),
-                                        item.as_str().unwrap(),
-                                    );
-                                // println!("{}", get_forward_triples);
-                                let r = fetch_sparql_results(
-                                    &client,
-                                    SPARQL_ENDPOINT,
-                                    get_forward_triples.as_str(),
-                                )
-                                .await?;
+            if let Some(forward) = inner_obj.get("forward") {
+                if let Some(forward_array) = forward.as_array() {
+                    for item in forward_array {
+                        // Fetch URIs belonging to the current key (type).
+                        // These URIs were placed in the hashmap in a previous step
+                        // where their type was in the reverse/forward array of a previous type.
+                        // We fetch them to get their forward triples.
+                        if let Some(current_uris) = map.get(key.as_str()) {
+                            let values_list = current_uris
+                                .iter()
+                                .map(|v| format!("{}", v))
+                                .collect::<Vec<_>>()
+                                .join("\n");
+                            // println!("{}", values_list);
+                            let get_forward_triples =
+                                create_forward_parametrized_select_query_with_type(
+                                    values_list.as_str(),
+                                    item.as_str().unwrap(),
+                                );
+                            // println!("{}", get_forward_triples);
+                            let r = fetch_sparql_results(
+                                &client,
+                                SPARQL_ENDPOINT,
+                                get_forward_triples.as_str(),
+                            )
+                            .await?;
 
-                                let results = parse_json_uris(&r, "o");
-                                // println!("{:?}", results);
-                                let result_value_list = results
-                                    .iter()
-                                    .filter_map(|v| {
-                                        v["o"]["value"].as_str().map(|s| format!("<{}>", s))
-                                    })
-                                    .collect::<Vec<_>>();
-                                if !result_value_list.is_empty() {
-                                    map.insert(item.as_str().unwrap(), result_value_list);
+                            let results = parse_json_uris(&r, "o");
+                            // println!("{:?}", results);
+                            let result_value_list = results
+                                .iter()
+                                .filter_map(|v| {
+                                    v["o"]["value"].as_str().map(|s| format!("<{}>", s))
+                                })
+                                .collect::<Vec<_>>();
+                            if !result_value_list.is_empty() {
+                                // if item != key {
+                                //     map.entry(key)
+                                //         .or_insert_with(Vec::new)
+                                //         .extend(result_value_list);
+                                //     // let ve = map.get(item.as_str().unwrap()).unwrap();
+                                //     // ve.extend(result_value_list);
+                                // } else {
+                                //     map.insert(item.as_str().unwrap(), result_value_list);
+                                // }
 
-                                    s.push_str(build_delete_snippet(&results, "o").as_str());
-                                    s.push_str("\n;\n\n");
-                                }
+                                map.entry(item.as_str().unwrap())
+                                    .or_insert_with(Vec::new)
+                                    .extend(result_value_list);
+
+                                // s.push_str(build_delete_snippet(&results, "o").as_str());
+                                // s.push_str("\n;\n\n");
                             }
                         }
                     }
                 }
             }
         }
+    }
     // }
+
+    for (key, value) in map {
+        // let values_list = value
+        //     .iter()
+        //     .map(|v| format!("    {}", v))
+        //     .collect::<Vec<_>>()
+        //     .join("\n");
+        let values_list: Vec<String> = value
+        .into_iter()
+        .collect::<HashSet<_>>()
+        .into_iter()
+        .collect();
+
+        let tmp = values_list.iter()
+        .map(|v| format!("    {}", v))
+        .collect::<Vec<_>>()
+        .join("\n");
+        s.push_str(build_parametrized_delete_query(tmp.as_str()).as_str());
+        s.push_str("\n\n;\n\n");
+    }
 
     Ok(s)
 }
@@ -437,8 +514,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // f.write_all("# Delete forward triples\n\n".as_bytes())?;
     // f.write_all(out_forward.as_bytes())?;
-    f.write_all(create_simple_forward_parametrized_delete_query(URI).as_bytes())?;
-    f.write_all(b"\n")?;
+    // f.write_all(create_simple_forward_parametrized_delete_query(URI).as_bytes())?;
+    // f.write_all(b"\n")?;
 
     Ok(())
 }
