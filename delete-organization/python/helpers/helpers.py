@@ -2,6 +2,12 @@ from pathlib import Path
 
 from helpers.sparql_escape_helpers import sparql_escape_uri
 
+ROLES: list[str] = [
+    "", # For the org graph
+    "/LoketLB-toezichtGebruiker",
+    "/LoketLB-personeelsbeheer",
+    "/LoketLB-berichtenGebruiker"
+]
 
 def create_output_dir(path: str):
     folder_path = Path(path)
