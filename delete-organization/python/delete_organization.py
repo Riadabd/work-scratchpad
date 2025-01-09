@@ -7,6 +7,7 @@ from helpers.helpers import (
     write_select_query,
     write_delete_query,
     write_direct_forward_delete_query,
+    write_direct_reverse_delete_query
 )
 from config.loket.path_to_types import data
 
@@ -53,6 +54,9 @@ def write_delete_queries(organization_uri: str, filename: str) -> None:
     # Delete direct forward properties belonging to the organization
     file.write(write_direct_forward_delete_query(organization_uri))
 
+    # Delete direct reverse properties pointing to the organization
+    file.write(write_direct_reverse_delete_query(organization_uri))
+
     file.close()
 
 
@@ -64,6 +68,7 @@ if __name__ == "__main__":
         next(csv_reader)
         for row in csv_reader:
             current_datetime: str = datetime.now().strftime("%Y%m%d%H%M%S")
+            # Strip characters such as -,:,; and spaces (one or more)
             name: str = re.sub(r"[-:\s+]", " ", row[1])
             filename: str = (
                 f"{current_datetime}-delete-{'-'.join(name.lower().split())}.sparql"

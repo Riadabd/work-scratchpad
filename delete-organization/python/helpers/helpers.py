@@ -37,6 +37,22 @@ WHERE {{
 }}
 """
 
+def write_direct_reverse_delete_query(org_uri: str) -> str:
+    return f"""
+DELETE {{
+  GRAPH ?g {{
+    ?s ?p ?organization .
+  }}
+}}
+WHERE {{
+  BIND({sparql_escape_uri(org_uri)} AS ?organization)
+
+  GRAPH ?g {{
+    ?s ?p ?organization .
+  }}
+}}
+"""
+
 
 def write_delete_query(uri: list[str], graph_filter: str, graph: str = None) -> str:
     if not graph:
