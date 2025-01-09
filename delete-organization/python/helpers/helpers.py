@@ -193,3 +193,28 @@ WHERE {{
   }}
 }}
 """
+
+def is_session_graph_populated_for_org(org_uri: str) -> str:
+    return f"""
+ASK WHERE {{
+  GRAPH <http://mu.semte.ch/graphs/sessions> {{
+    ?session <http://mu.semte.ch/vocabularies/ext/sessionGroup> {sparql_escape_uri(org_uri)} ;
+      ?sessionP ?sessionO .
+  }}
+}}
+"""
+
+def write_session_delete_query(org_uri: str) -> str:
+    return f"""
+DELETE {{
+  GRAPH <http://mu.semte.ch/graphs/sessions> {{
+    ?session ?sessionP ?sessionO .
+  }}
+}}
+WHERE {{
+  GRAPH <http://mu.semte.ch/graphs/sessions> {{
+    ?session <http://mu.semte.ch/vocabularies/ext/sessionGroup> {sparql_escape_uri(org_uri)} ;
+      ?sessionP ?sessionO .
+  }}
+}}
+"""
