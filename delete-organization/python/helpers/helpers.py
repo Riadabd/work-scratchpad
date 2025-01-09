@@ -4,9 +4,22 @@ from helpers.sparql_escape_helpers import sparql_escape_uri
 
 ROLES: list[str] = [
     "", # For the org graph
+    "/LoketLB-berichtenGebruiker",
+    "/LoketLB-eredienstBedienaarGebruiker",
+    "/LoketLB-eredienstMandaatGebruiker",
     "/LoketLB-toezichtGebruiker",
+    "/LoketLB-databankEredienstenGebruiker",
+    "/LoketLB-eredienstOrganisatiesGebruiker",
+    "/LoketLB-bbcdrGebruiker",
+    "/LoketLB-mandaatGebruiker",
+    "/LoketLB-LPDCGebruiker",
+    "/LoketLB-leidinggevendenGebruiker",
     "/LoketLB-personeelsbeheer",
-    "/LoketLB-berichtenGebruiker"
+    "/LoketLB-ContactOrganisatiegegevensGebruiker",
+    "/LoketLB-verenigingenGebruiker",
+    "/LoketLB-OpenProcesHuisGebruiker",
+    "/LoketLB-vendorManagementGebruiker",
+    "/LoketLB-admin"
 ]
 
 def create_output_dir(path: str):
@@ -100,10 +113,10 @@ WHERE {{
 }}
 """
 
-def is_graph_populated(org_uri: str) -> str:
+def is_graph_populated(org_uri: str, role: str) -> str:
     uuid: str = org_uri.split('/')[-1]
     graph_uri_prefix: str = "http://mu.semte.ch/graphs/organizations/"
-    graph_uri: str = f"{graph_uri_prefix}{uuid}"
+    graph_uri: str = f"{graph_uri_prefix}{uuid}{role}"
 
     return f"""
 ASK WHERE {{
@@ -113,11 +126,60 @@ ASK WHERE {{
 }}
 """
 
-def write_clear_graph_query(org_uri: str) -> str:
+def graph_contains_data_source_property(org_uri: str, role: str) -> str:
     uuid: str = org_uri.split('/')[-1]
     graph_uri_prefix: str = "http://mu.semte.ch/graphs/organizations/"
-    graph_uri: str = f"{graph_uri_prefix}{uuid}"
+    graph_uri: str = f"{graph_uri_prefix}{uuid}{role}"
+
+    return f"""
+ASK WHERE {{
+  GRAPH {sparql_escape_uri(graph_uri)} {{
+    VALUES ?p {{
+      <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#dataSource>
+      <http://purl.org/dc/terms/source>
+    }}
+
+    ?s ?p ?o .
+  }}
+}}
+"""
+
+def write_clear_graph_query(org_uri: str, role: str) -> str:
+    uuid: str = org_uri.split('/')[-1]
+    graph_uri_prefix: str = "http://mu.semte.ch/graphs/organizations/"
+    graph_uri: str = f"{graph_uri_prefix}{uuid}{role}"
 
     return f"""
 CLEAR GRAPH {sparql_escape_uri(graph_uri)}
+"""
+
+def write_graph_delete_query(org_uri: str, role) -> str:
+    """
+    Remove a graph's content through a DELETE query since we need to limit this delete.
+
+    At the moment, possible elements to preserve are virus scans and <share://> entities.
+    For "share://" entities, they can either be subjects or objects, so we check for both ?s and ?o.
+    This way we also do not to check for the specific properties relating to data sources.
+    """
+
+    uuid: str = org_uri.split('/')[-1]
+    graph_uri_prefix: str = "http://mu.semte.ch/graphs/organizations/"
+    graph_uri: str = f"{graph_uri_prefix}{uuid}{role}"
+
+    return f"""
+DELETE {{
+  GRAPH {sparql_escape_uri(graph_uri)} {{
+    ?s ?p ?o .
+  }}
+}}
+WHERE {{
+  GRAPH {sparql_escape_uri(graph_uri)} {{
+    ?s a ?type ;
+      ?p ?o .
+
+    FILTER (?type != <http://docs.oasis-open.org/cti/ns/stix#MalwareAnalysis>
+            && !STRSTARTS(STR(?s), "share://")
+            && !STRSTARTS(STR(?o), "share://"))
+  }}
+}}
 """

@@ -8,7 +8,10 @@ from helpers.helpers import (
     write_delete_query,
     write_direct_forward_delete_query,
     write_direct_reverse_delete_query,
-    is_graph_populated
+    write_clear_graph_query,
+    is_graph_populated,
+    graph_contains_data_source_property,
+    write_graph_delete_query
 )
 from helpers.helpers import ROLES
 from config.loket.path_to_types import data
@@ -36,7 +39,7 @@ normally be deleted through the `?p ?o` link.
 
 
 def write_delete_queries(organization_uri: str, filename: str) -> None:
-    file = open(f"output/{filename}", "w")
+    file = open(f"output/loket/{filename}", "w")
 
     for index, item in enumerate(data["delete"]):
         q: str = write_select_query(
@@ -54,8 +57,14 @@ def write_delete_queries(organization_uri: str, filename: str) -> None:
         if uris:
             file.write(write_delete_query(uris, item["additionalFilter"]) + "\n;\n")
 
+    for role in ROLES:
+        if query(is_graph_populated(organization_uri, role))["boolean"]:
+            # If graph is populated, delete its contents.
+            print(f"{organization_uri}")
+            file.write(write_graph_delete_query(organization_uri, role) + "\n;\n")
+
     # Delete direct forward properties belonging to the organization
-    file.write(write_direct_forward_delete_query(organization_uri))
+    file.write(write_direct_forward_delete_query(organization_uri) + "\n;\n")
 
     # Delete direct reverse properties pointing to the organization
     file.write(write_direct_reverse_delete_query(organization_uri))
