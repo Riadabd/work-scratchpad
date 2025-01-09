@@ -7,9 +7,12 @@ from helpers.helpers import (
     write_select_query,
     write_delete_query,
     write_direct_forward_delete_query,
-    write_direct_reverse_delete_query
+    write_direct_reverse_delete_query,
+    is_graph_populated
 )
+from helpers.helpers import ROLES
 from config.loket.path_to_types import data
+from config.op.path_to_types import data as data_op
 
 """
 One approach is to have a configuration file that details the links between the different types we have to delete.
@@ -59,6 +62,33 @@ def write_delete_queries(organization_uri: str, filename: str) -> None:
 
     file.close()
 
+def write_delete_queries_op(organization_uri: str, filename: str) -> None:
+    file = open(f"output/op/{filename}", "w")
+
+    for item in data_op["delete"]:
+        q: str = write_select_query(
+            organization_uri,
+            item["type"],
+            item["pathToType"],
+            item["additionalFilter"],
+        )
+
+        results = query(q)
+        uris: list[str] = []
+
+        for result in results["results"]["bindings"]:
+            uris.append(result["resource"]["value"])
+
+        if uris:
+            file.write(write_delete_query(uris, item["additionalFilter"]) + "\n;\n")
+
+    # Delete direct forward properties belonging to the organization
+    file.write(write_direct_forward_delete_query(organization_uri))
+
+    # Delete direct reverse properties pointing to the organization
+    file.write(write_direct_reverse_delete_query(organization_uri))
+
+    file.close()
 
 if __name__ == "__main__":
     with open("config/organization_uris.csv", "r") as file:
