@@ -3,7 +3,11 @@ import re
 from datetime import datetime
 
 from helpers.sparql_helpers import query
-from helpers.helpers import write_select_query, write_delete_query
+from helpers.helpers import (
+    write_select_query,
+    write_delete_query,
+    write_direct_forward_delete_query,
+)
 from config.loket.path_to_types import data
 
 """
@@ -44,13 +48,11 @@ def write_delete_queries(organization_uri: str, filename: str) -> None:
             uris.append(result["resource"]["value"])
 
         if uris:
-            file.write(
-                write_delete_query(uris, item["additionalFilter"]) + "\n;\n"
-            )
+            file.write(write_delete_query(uris, item["additionalFilter"]) + "\n;\n")
 
-    # Remove trailing semi-colon
-    file.seek(file.tell() - 3)
-    file.truncate()
+    # Delete direct forward properties belonging to the organization
+    file.write(write_direct_forward_delete_query(organization_uri))
+
     file.close()
 
 
