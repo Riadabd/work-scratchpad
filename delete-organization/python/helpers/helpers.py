@@ -99,3 +99,25 @@ WHERE {{
   {graph_filter}
 }}
 """
+
+def is_graph_populated(org_uri: str) -> str:
+    uuid: str = org_uri.split('/')[-1]
+    graph_uri_prefix: str = "http://mu.semte.ch/graphs/organizations/"
+    graph_uri: str = f"{graph_uri_prefix}{uuid}"
+
+    return f"""
+ASK WHERE {{
+  GRAPH {sparql_escape_uri(graph_uri)} {{
+    ?s ?p ?o .
+  }}
+}}
+"""
+
+def write_clear_graph_query(org_uri: str) -> str:
+    uuid: str = org_uri.split('/')[-1]
+    graph_uri_prefix: str = "http://mu.semte.ch/graphs/organizations/"
+    graph_uri: str = f"{graph_uri_prefix}{uuid}"
+
+    return f"""
+CLEAR GRAPH {sparql_escape_uri(graph_uri)}
+"""
