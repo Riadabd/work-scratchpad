@@ -1,6 +1,6 @@
 import csv
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from helpers.sparql_helpers import query
 from helpers.helpers import (
@@ -65,7 +65,6 @@ def write_delete_queries(organization_uri: str, filename: str) -> None:
             file.write(write_graph_delete_query(organization_uri, role) + "\n;\n")
 
     if query(is_session_graph_populated_for_org(organization_uri))["boolean"]:
-        print(f"{organization_uri}")
         file.write(write_session_delete_query(organization_uri) + "\n;\n")
 
     # Delete direct forward properties belonging to the organization
@@ -107,15 +106,20 @@ def write_delete_queries_op(organization_uri: str, filename: str) -> None:
 if __name__ == "__main__":
     with open("config/organization_uris.csv", "r") as file:
         csv_reader = csv.reader(file)
+        current = datetime.now()
 
         # Skip header
         next(csv_reader)
         for row in csv_reader:
-            current_datetime: str = datetime.now().strftime("%Y%m%d%H%M%S")
             # Strip characters such as -,:,; and spaces (one or more)
             name: str = re.sub(r"[-:\s+]", " ", row[1])
             filename: str = (
-                f"{current_datetime}-delete-{'-'.join(name.lower().split())}.sparql"
+                f"{current.strftime("%Y%m%d%H%M%S")}-delete-{'-'.join(name.lower().split())}.sparql"
             )
 
             write_delete_queries(row[0], filename)
+
+            # Formatting now() on every time iteration will yield duplicate output since
+            # we only capture seconds. For exammple, we may get "20250109195251" as the time
+            # prefix for multiple files before the clock moves one second, and the output changes.
+            current = current + timedelta(seconds=1)
