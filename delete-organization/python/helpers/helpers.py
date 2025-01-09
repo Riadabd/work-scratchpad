@@ -2,6 +2,16 @@ from pathlib import Path
 
 from helpers.sparql_escape_helpers import sparql_escape_uri
 
+"""
+Roles were fetched through the following query:
+
+PREFIX foaf:	<http://xmlns.com/foaf/0.1/>
+
+SELECT DISTINCT ?role WHERE {
+  ?s a foaf:OnlineAccount ;
+    <http://mu.semte.ch/vocabularies/ext/sessionRole> ?role .
+}
+"""
 ROLES: list[str] = [
     "", # For the org graph
     "/LoketLB-berichtenGebruiker",
