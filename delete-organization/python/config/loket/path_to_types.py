@@ -107,9 +107,13 @@ data = {
 
                 ?submission <http://purl.org/dc/terms/subject> ?resource .
             """,
-            "additionalFilter": """FILTER (?p != <http://purl.org/dc/terms/source>)""", # Preseve the source property as it helps with finding dangling files if want to deal with them at a later stage.
+            # The source property can look as follows:
+            #   dcterms:source	<share://submissions/268de021-7a18-11ee-a11e-5b20eafcb793.ttl> , <share://submissions/26292ae1-7a18-11ee-a11e-5b20eafcb793.ttl> , <share://submissions/26347581-7a18-11ee-a11e-5b20eafcb793.ttl>
+            # Preseve the source property as it helps with finding dangling files if want to deal with them at a later stage.
+            "additionalFilter": """FILTER (?p != <http://purl.org/dc/terms/source>)""",
         },
-        # Files connected to submissions
+        # Files connected to submissions that have the following prefix:
+        #   <http://mu.semte.ch/services/file-service/files/>
         {
             "type": "http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#FileDataObject",
             "pathToType": """
