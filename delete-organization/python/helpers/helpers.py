@@ -49,6 +49,14 @@ SELECT DISTINCT ?resource WHERE {{
 }}
 """
 
+def has_direct_forward_properties(org_uri: str) -> str:
+    return f"""
+ASK WHERE {{
+    BIND({sparql_escape_uri(org_uri)} AS ?organization)
+
+    ?organization ?p ?o .
+}}
+"""
 
 def write_direct_forward_delete_query(org_uri: str) -> str:
     return f"""
@@ -63,6 +71,15 @@ WHERE {{
   GRAPH ?g {{
     ?organization ?p ?o .
   }}
+}}
+"""
+
+def has_direct_reverse_properties(org_uri: str) -> str:
+    return f"""
+ASK WHERE {{
+    BIND({sparql_escape_uri(org_uri)} AS ?organization)
+
+    ?s ?p ?organization .
 }}
 """
 
