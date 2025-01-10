@@ -15,6 +15,24 @@ data = {
             """,
             "additionalFilter": """FILTER(?g != <http://mu.semte.ch/graphs/landing-zone/op-public>)""",
         },
+        # Person
+        {
+            "type": "http://xmlns.com/foaf/0.1/Person",
+            "pathToType": """
+                ?resource <http://xmlns.com/foaf/0.1/member> ?organization .
+            """,
+            "additionalFilter": "",
+        },
+        # Mock-login account
+        {
+            "type": "http://xmlns.com/foaf/0.1/OnlineAccount",
+            "pathToType": """
+                ?person a <http://xmlns.com/foaf/0.1/Person> ;
+                    <http://xmlns.com/foaf/0.1/member> ?organization ;
+                    <http://xmlns.com/foaf/0.1/account> ?resource .
+            """,
+            "additionalFilter": "",
+        },
         # Covers the cases when ?p = <http://schema.org/recipient> or ?p = <http://schema.org/sender>
         {
             "type": "http://schema.org/Message",
