@@ -6,7 +6,9 @@ from helpers.sparql_helpers import query
 from helpers.helpers import (
     write_select_query,
     write_delete_query,
+    has_direct_forward_properties,
     write_direct_forward_delete_query,
+    has_direct_reverse_properties,
     write_direct_reverse_delete_query,
     write_clear_graph_query,
     is_graph_populated,
@@ -16,7 +18,7 @@ from helpers.helpers import (
     write_session_delete_query
 )
 from helpers.helpers import ROLES
-from config.loket.path_to_types import data
+from config.loket.path_to_types import data as data_loket
 from config.op.path_to_types import data as data_op
 
 """
@@ -43,7 +45,7 @@ normally be deleted through the `?p ?o` link.
 def write_delete_queries(organization_uri: str, filename: str) -> None:
     file = open(f"output/loket/{filename}", "w")
 
-    for index, item in enumerate(data["delete"]):
+    for item in data_loket["delete"]:
         q: str = write_select_query(
             organization_uri,
             item["type"],
@@ -76,7 +78,7 @@ def write_delete_queries(organization_uri: str, filename: str) -> None:
     file.close()
 
 def write_delete_queries_op(organization_uri: str, filename: str) -> None:
-    file = open(f"output/op/{filename}", "w")
+    output: list[str] = []
 
     for item in data_op["delete"]:
         q: str = write_select_query(
@@ -93,15 +95,19 @@ def write_delete_queries_op(organization_uri: str, filename: str) -> None:
             uris.append(result["resource"]["value"])
 
         if uris:
-            file.write(write_delete_query(uris, item["additionalFilter"]) + "\n;\n")
+            output.append(write_delete_query(uris, item["additionalFilter"]))
 
-    # Delete direct forward properties belonging to the organization
-    file.write(write_direct_forward_delete_query(organization_uri))
+    if query(has_direct_forward_properties(organization_uri))["boolean"]:
+        # Delete direct forward properties belonging to the organization
+        output.append(write_direct_forward_delete_query(organization_uri))
 
-    # Delete direct reverse properties pointing to the organization
-    file.write(write_direct_reverse_delete_query(organization_uri))
+    if query(has_direct_reverse_properties(organization_uri))["boolean"]:
+        # Delete direct reverse properties pointing to the organization
+        output.append(write_direct_reverse_delete_query(organization_uri))
 
-    file.close()
+    if output:
+        with open(f"output/op/{filename}", "w") as file:
+            file.write("\n;\n".join(output))
 
 if __name__ == "__main__":
     with open("config/organization_uris.csv", "r") as file:
@@ -117,7 +123,8 @@ if __name__ == "__main__":
                 f"{current.strftime("%Y%m%d%H%M%S")}-delete-{'-'.join(name.lower().split())}.sparql"
             )
 
-            write_delete_queries(row[0], filename)
+            # write_delete_queries(row[0], filename)
+            write_delete_queries_op(row[0], filename)
 
             # Formatting now() on every time iteration will yield duplicate output since
             # we only capture seconds. For exammple, we may get "20250109195251" as the time
