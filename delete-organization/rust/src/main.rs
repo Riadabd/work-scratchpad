@@ -13,7 +13,7 @@ use serde::Deserialize;
 use serde_json::Value;
 
 #[derive(Deserialize)]
-struct jsonConfig {
+struct JsonConfig {
     #[serde(flatten)]
     data: IndexMap<String, serde_json::Value>,
 }
@@ -315,7 +315,7 @@ async fn build_deletion_path(
     let file = File::open("config/config-op.json")?;
     let reader = BufReader::new(file);
     // let my_data: Value = serde_json::from_reader(reader)?;
-    let parsed_json_config: jsonConfig = serde_json::from_reader(reader)?;
+    let parsed_json_config: JsonConfig = serde_json::from_reader(reader)?;
 
     let mut map: HashMap<&str, Vec<String>> = HashMap::new();
 
